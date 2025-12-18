@@ -1,8 +1,7 @@
 name: Android
 
 on:
-  push:
-    branches: [ "main" ]
+  workflow_dispatch:
   pull_request:
     branches: [ "main" ]
 
@@ -31,7 +30,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: 'jetbrains'
-          java-version: 21
+          java-version: 17
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
