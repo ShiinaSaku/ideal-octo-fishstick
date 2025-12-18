@@ -1,7 +1,15 @@
 package dev.sanmer.template.ui.theme
 
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
 
-val Primary = Color(0xFF6750A4)
-val Secondary = Color(0xFF625B71)
-val Tertiary = Color(0xFF7D5260)
+@Composable
+fun ShinnaTheme(content: @Composable () -> Unit) {
+    val scheme = dynamicLightColorScheme(LocalContext.current)
+
+    MaterialTheme(
+        colorScheme = scheme,
+        typography = Typography(),
+        content = content
+    )
+}
