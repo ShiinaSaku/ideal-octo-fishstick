@@ -13,19 +13,17 @@ android {
         minSdk = 29
         targetSdk = 36
         versionCode = 1
-        versionName = "0.1"
+        versionName = "1.0"
 
-        resourceConfigurations.add("en")
+        vectorDrawables {
+            useSupportLibrary = true
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
@@ -34,23 +32,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
-    kotlin {
-        jvmTarget = JavaVersion.VERSION_21
-    }
-
     buildFeatures {
         compose = true
-        buildConfig = true
     }
+}
 
-    packaging {
-        resources {
-            excludes.addAll(
-                "META-INF/**",
-                "kotlin/**",
-                "**.properties"
-            )
-        }
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 }
 
