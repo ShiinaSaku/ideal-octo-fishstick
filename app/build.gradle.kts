@@ -1,5 +1,6 @@
 import com.android.build.gradle.internal.api.ApkVariantOutputImpl
 import java.time.Instant
+import java.io.File
 
 plugins {
     alias(libs.plugins.android.application)
@@ -7,25 +8,44 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+fun exec(command: String): String {
+    val process = Runtime.getRuntime().exec(command)
+    process.waitFor()
+    return process.inputStream.reader().readText().trim()
+}
+
+val gitCommitSha = exec("git rev-parse --short HEAD")
+val gitCommitCount = exec("git rev-list --count HEAD").toInt()
+
 val baseVersionName = "0.0.1"
 val devVersion = exec("git tag --points-at HEAD").isEmpty()
 val shaSuffix = gitCommitSha.let { ".${it.substring(0, 7)}" }
 val devSuffix = if (devVersion) ".dev" else ""
 
+val releaseKeyStore = File("release.keystore")
+val hasReleaseKeyStore = releaseKeyStore.exists()
+val releaseKeyStorePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+val releaseKeyAlias = System.getenv("KEY_ALIAS") ?: ""
+val releaseKeyPassword = System.getenv("KEY_PASSWORD") ?: ""
+
 android {
     namespace = "dev.sanmer.template"
 
+    compileSdk = 36 
+
     defaultConfig {
         applicationId = namespace
-        versionName = "${baseVersionName}${shaSuffix}${devSuffix}"
+        minSdk = 29
+        targetSdk = 36
+        versionName = "\( {baseVersionName} \){shaSuffix}${devSuffix}"
         versionCode = gitCommitCount
 
-        ndk.abiFilters += listOf("arm64-v8a", "x86_64")
+
+        resourceConfigurations.add("en")
     }
 
     androidResources {
         generateLocaleConfig = true
-        localeFilters += listOf("en")
     }
 
     val releaseSigning = if (hasReleaseKeyStore) {
@@ -42,7 +62,7 @@ android {
     }
 
     buildTypes {
-        release {
+        getByName("release") {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -57,6 +77,7 @@ android {
             buildConfigField("long", "BUILD_TIME", Instant.now().toEpochMilli().toString())
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
@@ -66,27 +87,35 @@ android {
         buildConfig = true
     }
 
-    packaging.resources.excludes += setOf(
-        "META-INF/**",
-        "kotlin/**",
-        "**.bin",
-        "**.properties"
-    )
+    packaging {
+        resources {
+            excludes.addAll(setOf(
+                "META-INF/**",
+                "kotlin/**",
+                "**.bin",
+                "**.properties"
+            ))
+        }
+    }
 
-    dependenciesInfo.includeInApk = false
+    dependenciesInfo {
+        includeInApk = false
+    }
 
     applicationVariants.configureEach {
         outputs.configureEach {
             if (this is ApkVariantOutputImpl) {
-                outputFileName = "Template-${versionName}-${versionCode}-${name}.apk"
+                outputFileName = "Template-\( {versionName}- \){versionCode}-${name}.apk"
             }
         }
     }
 }
+
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
+}
 
 dependencies {
     implementation(platform("androidx.compose:compose-bom:2025.12.01"))
