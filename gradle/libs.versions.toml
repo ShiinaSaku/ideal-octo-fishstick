@@ -1,5 +1,5 @@
 [versions]
-androidGradlePlugin = "8.13.2"
+agp = "8.13.2"
 androidxActivity = "1.12.2"
 androidxAppCompat = "1.7.1"
 androidxCompose = "1.10.0"
@@ -52,15 +52,8 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlinxSerialization" }
 
 [plugins]
-self-application = { id = "self.application", version = "unspecified" }
-self-library = { id = "self.library", version = "unspecified" }
-self-compose = { id = "self.compose", version = "unspecified" }
-self-room = { id = "self.room", version = "unspecified" }
-
-android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
-android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-licensee = { id = "app.cash.licensee", version.ref = "cashLicensee" }
