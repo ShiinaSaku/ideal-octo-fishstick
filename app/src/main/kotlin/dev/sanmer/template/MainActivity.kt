@@ -26,17 +26,18 @@ import coil.compose.rememberAsyncImagePainter
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
-import androidx.compose.material3.ExperimentalMaterial3Api
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 
+// Data class for GitHub User
 data class GitHubUser(
     @SerializedName("login") val login: String,
     @SerializedName("name") val name: String?,
     @SerializedName("avatar_url") val avatarUrl: String
 )
 
+// Retrofit Service
 interface GitHubService {
     @GET("users/{username}")
     suspend fun getUser(@Path("username") username: String): GitHubUser
@@ -50,6 +51,7 @@ interface GitHubService {
     }
 }
 
+// ViewModel for fetching data
 class UserViewModel : ViewModel() {
     var user by mutableStateOf<GitHubUser?>(null)
         private set
@@ -85,7 +87,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+// Dynamic theme with improvements
 @Composable
 fun BestFriendAppTheme(
     darkTheme: Boolean = true, // Or use isSystemInDarkTheme()
@@ -144,7 +146,7 @@ fun BestFriendScreen(viewModel: UserViewModel = viewModel()) {
         } else if (user != null) {
             UserAvatar(avatarUrl = user.avatarUrl)
             Spacer(modifier = Modifier.height(32.dp))
-            CuteMessageCard(userName = "Prslc") 
+            CuteMessageCard(userName = "Prslc") // Hardcoded friend's name as provided
             Spacer(modifier = Modifier.height(32.dp))
             BestFriendTooltip()
         } else {
@@ -163,6 +165,63 @@ fun UserAvatar(avatarUrl: String) {
             .clip(CircleShape),
         contentScale = ContentScale.Crop
     )
+}
+
+@Composable
+fun CuteMessageCard(userName: String) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "$userName, you're so cute!",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "$userName、あなたはとてもかわいいです！",
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.secondary
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BestFriendTooltip() {
+    val tooltipState = rememberTooltipState(isPersistent = false)
+
+    TooltipBox(
+        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+        tooltip = {
+            PlainTooltip {
+                Text(
+                    text = "You're my best friend!",
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        },
+        state = tooltipState
+    ) {
+        ElevatedButton(onClick = { /* Could show tooltip programmatically if needed */ }) {
+            Text("Hover or Long Press for Secret Message")
+        }
+    }
 }
 
 @Composable
