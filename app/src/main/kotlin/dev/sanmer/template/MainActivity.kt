@@ -26,6 +26,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
+import androidx.compose.material3.ExperimentalMaterial3Api
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -84,7 +85,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Dynamic theme with improvements
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BestFriendAppTheme(
     darkTheme: Boolean = true, // Or use isSystemInDarkTheme()
