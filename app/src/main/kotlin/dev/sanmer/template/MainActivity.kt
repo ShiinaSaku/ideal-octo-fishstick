@@ -2,7 +2,7 @@ package dev.sanmer.template
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.enableEdgeToEdge
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
