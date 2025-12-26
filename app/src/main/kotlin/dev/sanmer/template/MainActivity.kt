@@ -2,10 +2,10 @@ package dev.sanmer.template
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
-import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.Image
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +14,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -31,18 +33,13 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 
-/* ----------------------------- DATA ----------------------------- */
-
 data class GitHubUser(
     @SerializedName("login") val login: String,
     @SerializedName("name") val name: String?,
     @SerializedName("avatar_url") val avatarUrl: String
 )
 
-/* ----------------------------- NETWORK ----------------------------- */
-
 interface GitHubService {
-
     @GET("users/{username}")
     suspend fun getUser(@Path("username") username: String): GitHubUser
 
@@ -57,18 +54,13 @@ interface GitHubService {
     }
 }
 
-/* ----------------------------- UI STATE ----------------------------- */
-
 sealed interface UserUiState {
     data object Loading : UserUiState
     data class Success(val user: GitHubUser) : UserUiState
     data class Error(val message: String) : UserUiState
 }
 
-/* ----------------------------- VIEWMODEL ----------------------------- */
-
 class UserViewModel : ViewModel() {
-
     var uiState by mutableStateOf<UserUiState>(UserUiState.Loading)
         private set
 
@@ -80,39 +72,32 @@ class UserViewModel : ViewModel() {
             }.onSuccess {
                 uiState = UserUiState.Success(it)
             }.onFailure {
-                uiState = UserUiState.Error(it.message ?: "Unknown error")
+                uiState = UserUiState.Error(it.message ?: "Connection failed")
             }
         }
     }
 }
 
-/* ----------------------------- ACTIVITY ----------------------------- */
-
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         setContent {
-            BestFriendTheme {
+            AppTheme {
                 MainScreen()
             }
         }
     }
 }
 
-/* ----------------------------- THEME ----------------------------- */
-
 @Composable
-fun BestFriendTheme(content: @Composable () -> Unit) {
+fun AppTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
-    val colorScheme =
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            dynamicDarkColorScheme(context)
-        } else {
-            darkColorScheme()
-        }
+    val colorScheme = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        dynamicDarkColorScheme(context)
+    } else {
+        darkColorScheme(primary = Color(0xFFD0BCFF), secondary = Color(0xFFCCC2DC))
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -120,8 +105,6 @@ fun BestFriendTheme(content: @Composable () -> Unit) {
         content = content
     )
 }
-
-/* ----------------------------- SCREEN ----------------------------- */
 
 @Composable
 fun MainScreen(viewModel: UserViewModel = viewModel()) {
@@ -131,110 +114,141 @@ fun MainScreen(viewModel: UserViewModel = viewModel()) {
         viewModel.fetchUser(username)
     }
 
-    Scaffold { padding ->
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
             contentAlignment = Alignment.Center
         ) {
-            Crossfade(
+            AnimatedContent(
                 targetState = viewModel.uiState,
-                label = "user_state"
+                transitionSpec = {
+                    fadeIn() + scaleIn(initialScale = 0.9f) togetherWith fadeOut()
+                },
+                label = "state_transition"
             ) { state ->
                 when (state) {
-                    UserUiState.Loading -> LoadingState()
-                    is UserUiState.Error -> ErrorState(state.message)
-                    is UserUiState.Success -> UserContent(state.user)
+                    is UserUiState.Loading -> LoadingState()
+                    is UserUiState.Error -> ErrorState(state.message) { viewModel.fetchUser(username) }
+                    is UserUiState.Success -> UserProfileCard(state.user)
                 }
             }
         }
     }
 }
 
-/* ----------------------------- CONTENT ----------------------------- */
-
 @Composable
-fun UserContent(user: GitHubUser) {
+fun UserProfileCard(user: GitHubUser) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        AsyncImage(
-            model = user.avatarUrl,
-            contentDescription = null,
+        Box(
             modifier = Modifier
-                .size(180.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
+                .size(200.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.sweepGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.tertiary,
+                            MaterialTheme.colorScheme.primary
+                        )
+                    )
+                )
+                .padding(6.dp)
+        ) {
+            AsyncImage(
+                model = "https://github.com/${user.login}.png",
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        Text(
+            text = user.name ?: user.login,
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Black,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        Text(
+            text = "@${user.login}",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
         )
 
         Spacer(Modifier.height(32.dp))
 
-        ExpressiveMessageCard(user.name ?: user.login)
-
-        Spacer(Modifier.height(24.dp))
-
-        ElevatedButton(
-            shape = RoundedCornerShape(28.dp),
-            onClick = {}
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(32.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            tonalElevation = 8.dp
         ) {
-            Text("You’re my best friend")
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "You're so cute!",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "あなたはとてもかわいいです！",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        }
+
+        Spacer(Modifier.height(40.dp))
+
+        FilledTonalButton(
+            onClick = { },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = CircleShape
+        ) {
+            Text("You’re my best friend", style = MaterialTheme.typography.labelLarge)
         }
     }
 }
-
-@Composable
-fun ExpressiveMessageCard(name: String) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "$name, you're so cute!",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = "$name、あなたはとてもかわいいです！",
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.secondary
-            )
-        }
-    }
-}
-
-/* ----------------------------- STATES ----------------------------- */
 
 @Composable
 fun LoadingState() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        CircularProgressIndicator()
-        Spacer(Modifier.height(16.dp))
-        Text("Fetching best friend…")
+        CircularProgressIndicator(strokeWidth = 4.dp, modifier = Modifier.size(48.dp))
+        Spacer(Modifier.height(24.dp))
+        Text("Finding your best friend...", style = MaterialTheme.typography.bodyMedium)
     }
 }
 
 @Composable
-fun ErrorState(message: String) {
-    Text(
-        text = message,
-        color = MaterialTheme.colorScheme.error,
-        textAlign = TextAlign.Center
-    )
+fun ErrorState(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(message, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+        TextButton(onClick = onRetry) {
+            Text("Try Again")
+        }
+    }
 }
